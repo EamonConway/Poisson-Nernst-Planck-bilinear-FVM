@@ -40,6 +40,13 @@ for k = 1:length(element(:,1));
     C1_ref = C1(node_ref);
     C2_ref = C2(node_ref);
     Phi_ref = Phi(node_ref);
+    face_1 = [1/2*(z(1)+z(2)),1/2*(r(1)+r(2))];
+    face_2 = [1/2*(z(2)+z(3)),1/2*(r(2)+r(3))];
+    face_3 = [1/2*(z(3)+z(4)),1/2*(r(3)+r(4))];
+    face_4 = [1/2*(z(1)+z(4)),1/2*(r(1)+r(4))];
+    
+    h_xi  = face_3-face_1;
+    h_eta = face_4-face_2;
     
     for j = 1:4 %This is quadrilateral specific
         
@@ -85,6 +92,24 @@ for k = 1:length(element(:,1));
             % Unit Normal
         n = [0 1;-1 0]*(J'*[a_xi(j);a_eta(j)]);
         n = n/norm(n);
+        
+            % Upwind check
+        UpdPhi = J\dPhi;
+        h_1 = 1/norm(UpdPhi)*UpdPhi(:)'*h_xi(:);
+        h_2 = 1/norm(UpdPhi)*UpdPhi(:)'*h_eta(:);
+        h = norm(h_1) + norm(h_2);
+        Pe = norm(UpdPhi)*h;
+        direction = -valence(1)*UpdPhi(:)'*n(:);
+        if isnan(h)
+            
+        elseif Pe>=2 && direction>0
+            C1face = C1_ref(j);
+            C2face = C2_ref(mod(j,4)+1);
+        elseif h>=2 && direction<0
+            C1face = C1_ref(mod(j,4)+1);
+            C2face = C2_ref(j);
+%             t  
+        end
         
             % Integrand at tau(alpha)
         GC1 = -mu(1)*((J\(dC1 + valence(1)*varphi*dPhi*C1face))'*n)*rface*drho;
